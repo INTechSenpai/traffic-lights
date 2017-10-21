@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright (C) 2013-2017 Pierre-François Gimenez
+Copyright (C) 2017 Pierre-François Gimenez
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,9 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>
 '''
 
+from numpy import median
 import picamera
 import picamera.array
 from keras.models import load_models
+from time import time
 
 colors = {'J' : [247,180,0],
           'B' : [0,90,139],
@@ -67,11 +69,42 @@ print 'Neural network loading'
 
 model = load_model('model.h5')
 
+# TODO attendre le signal
+
+print 'Begin processing !'
+
+debut = time()
 with picamera.PiCamera() as camera:
     with picamera.array.PiRGBArray(camera) as output:
         camera.capture(output, 'rgb')
 
+print 'Image capture time :',time()-debut
+debut = time()
+
 img = output.array.reshape(1,w,h,3)
 prediction = model.predict(img)
 
+print 'Inference time :',time()-debut
 
+x = prediction[0]
+y = prediction[1]
+width = prediction[2] / 3
+
+couleurs = []
+
+# pour chaque carré du pattern
+for k in range(3):
+    lr = []
+    lg = []
+    lb = []
+    # on itère sur sa largeur
+    for i in range(width):
+        # et sur sa hauteur
+        for j in range(width):
+            # pour chaque couleur du pixel
+            lr.append(img[0][width * k + i][j][0]) 
+            lg.append(img[0][width * k + i][j][1]) 
+            lb.append(img[0][width * k + i][j][2])
+    couleurs.append([median(lr), median(lg), median(lb)])
+
+print most_probable_pattern(couleurs)
