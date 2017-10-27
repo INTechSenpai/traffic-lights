@@ -56,6 +56,22 @@ def most_probable_pattern(l):
             minDistance = dist
     return patterns[argmin]
 
+def closest_patterns():
+    minVal = 10000000000
+    for i in range(len(patterns)-1):
+        for j in range(i+1, len(patterns)):
+            if i != j and (i%2 != 0 or j != i+1): # l'ordre n'importe pas
+                tmp = sum([distance_couleur(colors[patterns[i][k]], colors[patterns[j][k]]) for k in range(3)])
+                if tmp < minVal:
+                    minI = i
+                    minJ = j
+                    minVal = tmp
+
+    print distance_couleur(colors['J'], colors['O']), 'entre Orange et Jaune'
+    print minVal, 'entre', patterns[minI], 'et', patterns[minJ]
+
+closest_patterns()
+
 # Camera configuration
 # TODO : potentiellement à modifier
 w = 320
