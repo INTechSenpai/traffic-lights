@@ -24,8 +24,8 @@ import numpy as np
 train_set_x = []
 train_set_y = []
 
-nbImageTrainingSet = 1
-nbImageTestSet = 0
+nbImageTrainingSet = 2
+nbImageTestSet = 1
 nbGenerated = 1
 nbTotalTrainingSet = nbGenerated * nbImageTrainingSet
 nbTotalTestSet = nbGenerated * nbImageTestSet
@@ -37,27 +37,31 @@ def compute(rng, nbGenerated, lines):
     set_x = []
     set_y = []
     for i in rng:
-        print "Contenu:",lines[i]
+        print "Ligne ",i,": ",lines[i]
         x_target, y_target = literal_eval(lines[i])
         for j in range(nbGenerated):
-            img, x, y = generate("data/pic"+str(i)+".jpg", x_target, y_target)
+            img, x, y = generate("data/img/"+str(i+1)+".jpg", x_target, y_target)
             set_x.append(np.array(img)[...,:3]) # on retire le canal alpha
-            set_y.append((x,y))
-    return set_x, set_y
+            set_y.append(np.array((x,y)))
+    return np.asarray(set_x), np.asarray(set_y)
 
 file_target = open("data/target.txt", "r")
 lines = file_target.readlines()
 file_target.close()
 
-train_set = compute(range(nbImageTrainingSet), nbGenerated, lines)
+train_set = compute(range(0, nbImageTrainingSet), nbGenerated, lines)
 
-print train_set
+#print train_set
 
-train_set_x = train_set[0].reshape(nbTotalTrainSet, 3, 32, 32)
-train_set_y = train_set[1].reshape(nbTotalTrainSet, 2)
+print "Training set"
 
-test_set = compute(range(nbImageTrainingSet), nbGenerated, lines)
-test_set_x = train_set[0].reshape(nbTotalTrainSet, 3, 32, 32)
-test_set_y = train_set[1].reshape(nbTotalTrainSet, 2)
+train_set_x = train_set[0].reshape(nbTotalTrainingSet, 3, 32, 32)
+train_set_y = train_set[1].reshape(nbTotalTrainingSet, 2)
+
+print "Test set"
+
+test_set = compute(range(nbImageTrainingSet, nbImageTrainingSet + nbImageTestSet), nbGenerated, lines)
+test_set_x = test_set[0].reshape(nbTotalTestSet, 3, 32, 32)
+test_set_y = test_set[1].reshape(nbTotalTestSet, 2)
 
 pickle.dump((train_set_x, train_set_y, test_set_x, test_set_y), open("dataset.dat","wb"), 2)
