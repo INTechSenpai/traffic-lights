@@ -28,7 +28,9 @@ colors = {'J' : [247,180,0],
           'O' : [218,113,52],
           'N' : [0,0,0],
           'V' : [97,153,58],
-	  'G' : [180,176,160]} # gris du contour
+	  'G' : [180,176,160], # gris du contour
+          'M' : [124,104,69], # marron
+          'BL' : [255,255,255]} # blanc
 
 patterns = [
         ['O','N','V'], ['V','N','O'],
@@ -43,7 +45,8 @@ patterns = [
         ['O','B','J'], ['J','B','O']]
 
 def distance_couleur(c1, c2):
-    return 2 * (c1[0] - c2[0]) ** 2 + 4 * (c1[1] - c2[1]) ** 2 + 3 * (c1[2] - c2[2]) ** 2
+    #return 2 * (c1[0] - c2[0]) ** 2 + 4 * (c1[1] - c2[1]) ** 2 + 3 * (c1[2] - c2[2]) ** 2
+    return (c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2
 
 def distance_pattern(l, pattern):
     return sum([distance_couleur(l[i], colors[pattern[i]]) for i in range(3)])
@@ -55,7 +58,18 @@ def is_grey(l):
         if dist < minDistance:
             return False
     return True
+
+    
  
+def get_couleur(c):
+    minDistance = 1000000000
+    for key in colors:
+        dist = distance_couleur(c, colors[key])
+        if dist < minDistance:
+            bestColor = key
+            minDistance = dist
+    return bestColor
+
 def most_probable_pattern(l):
     argmin = len(patterns)-1;
     minDistance = distance_pattern(l, patterns[argmin])
@@ -119,11 +133,41 @@ if False:
     width = prediction[2] / 3
 
 else:
-    img_original = Image.open("data/img/1.jpg").convert('RGB')
+    img_original = Image.open("data/img/15.jpg").convert('RGB')
     pixels = img_original.load()
     img = img_original
     x = 1336
     y = 895
+
+chunk_size = 40
+
+nbChunkX = int(img_original.size[0] / chunk_size)
+nbChunkY = int(img_original.size[1] / chunk_size)
+
+print nbChunkX, nbChunkY
+
+
+coloredChunks = [[0 for y in range(nbChunkY)] for x in range(nbChunkX)] 
+
+for x in range(nbChunkX):
+    for y in range(nbChunkY):
+        lr = []
+        lg = []
+        lb = []
+        for i in range(chunk_size):
+            for j in range(chunk_size):
+                c = pixels[x * chunk_size + i, y * chunk_size + j]
+                lr.append(c[0])
+                lg.append(c[1])
+                lb.append(c[2])
+        coloredChunks[x][y] = get_couleur([np.median(lr), np.median(lg), np.median(lb)])
+      
+        for i in range(chunk_size):
+            for j in range(chunk_size):
+                pixels[x * chunk_size + i, y * chunk_size + j] = tuple(colors[coloredChunks[x][y]])
+
+img_original.save("pattern2.jpg")
+exit()
 
 couleurs = []
 height = int(1.5 * width)
