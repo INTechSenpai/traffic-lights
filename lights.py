@@ -17,8 +17,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 '''
 
 from numpy import median
-import picamera
-import picamera.array
+#import picamera
+#import picamera.array
 from keras.models import load_models
 from time import time
 
@@ -26,7 +26,8 @@ colors = {'J' : [247,180,0],
           'B' : [0,90,139],
           'O' : [218,113,52],
           'N' : [0,0,0],
-          'V' : [97,153,58]}
+          'V' : [97,153,58],
+	  'G' : [180,176,160]} # gris du contour
 
 patterns = [
         ['O','N','V'], ['V','N','O'],
@@ -46,6 +47,14 @@ def distance_couleur(c1, c2):
 def distance_pattern(l, pattern):
     return sum([distance_couleur(l[i], colors[pattern[i]]) for i in range(3)])
 
+def is_grey(l):
+    minDistance = distance_couleur(l, colors['G'])
+    for key in colors:
+        dist = distance_couleur(l, colors[key])
+        if dist < minDistance:
+            return False
+    return True
+ 
 def most_probable_pattern(l):
     argmin = len(patterns)-1;
     minDistance = distance_pattern(l, patterns[argmin])
@@ -74,16 +83,17 @@ closest_patterns()
 
 # Camera configuration
 # TODO : potentiellement à modifier
-w = 320
-h = 240
+w = 128
 
 # TODO : rogner                                 
 camera.zoom = (0.0, 0.0, 1.0, 1.0)
-camera.resolution = (w, h)
+camera.resolution = (w, w)
 
 print 'Neural network loading'
 
 model = load_model('model.h5')
+
+print 'Ready !'
 
 # TODO attendre le signal
 
@@ -95,9 +105,9 @@ with picamera.PiCamera() as camera:
         camera.capture(output, 'rgb')
 
 print 'Image capture time :',time()-debut
-debut = time()
+img = output.array.reshape(1,3,w,w)
 
-img = output.array.reshape(1,w,h,3)
+debut = time()
 prediction = model.predict(img)
 
 print 'Inference time :',time()-debut
@@ -118,9 +128,12 @@ for k in range(3):
         # et sur sa hauteur
         for j in range(width):
             # pour chaque couleur du pixel
-            lr.append(img[0][width * k + i][j][0]) 
-            lg.append(img[0][width * k + i][j][1]) 
-            lb.append(img[0][width * k + i][j][2])
+            c = img[0][width * k + i][j]
+            # en ignorant les pixels gris
+            if not is_grey(c):
+                lr.append(c[0]) 
+                lg.append(c[1]) 
+                lb.append(c[2])
     couleurs.append([median(lr), median(lg), median(lb)])
 
 print most_probable_pattern(couleurs)
